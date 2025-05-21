@@ -13,35 +13,56 @@ def preprocessing(
     """_summary_
         data processing function
     Args:
-        df (pd.DataFrame): 데이터
-        dealing_outlier (bool, optional): whether to manage outlier. Defaults to False.
-        showTheOutlierForFeautres (bool, optional): display boxPlot graph with outlier in each numeric feature. Defaults to False.
-        convert_No_Service_to_No (bool, optional):whether to change No (phone, internet) service -> No. Defaults to False.
-        run_normalize (bool, optional): whether to nomalize numeric data. Defaults to False.
-        method (Literal[one_hot,label,NONE], optional): method to change categoric to numeric. Defaults to 'one_hot'. 'NONE' mean nothing do.
+        df (pd.DataFrame): 학습에 사용될 데이터셋
+        
+        dealing_outlier (bool, optional): outlier 처리 여부. Defaults to False.
+        
+        showTheOutlierForFeautres (bool, optional): 숫자형 데이터 컬럼의 통계 정보-> boxplot 확인 여부. Defaults to False.
+        
+        convert_No_Service_to_No (bool, optional): 
+            데이터셋 내에서 PhoneService, InternetService 컬럼의 데이터가 'NO'인 경우, 해당 열의 이와 관련된 데이터는 각각
+            No phone service, No internet service 이와 같은 값을 가짐. 
+            PhoneService, InternetService 의 값이 'YES' 인 경우에는 관련된 컬럼 데이터는 (YES, NO) 두 개의 범주로 나뉨.
+            No phone service, No internet service 데이터 값을 NO로 값을 변경하여 데이터를 다룰 것인가? 여부.
+            . Defaults to False.
+            
+        run_normalize (bool, optional): 숫자형 데이터 정규화 처리 여부. Defaults to False.
+            Decision Tree에서는 정규화 여부는 상관없지만, K-Means clustering에서는 차이가 컸습니다. 
+            
+        method (Literal[ one_hot, label, NONE], optional): 모델 학습 위해서는 각 데이터를 숫자형 데이터로 바꿀 필요가 있다.
+            범주형 데이터 -> 숫자형 데이터 변환 방식 선택, 
+            'one hot encoding' OR 'label encoding' 
+            . Defaults to 'one_hot'. 'NONE' mean nothing do.
 
     Returns:
-        pd.DataFrame: preprocessed dataFrame
+        pd.DataFrame: 전처리된 데이터셋
     """
     
     df.drop(columns=['customerID'], inplace=True)
     # drop meaningless features.
+    # 불필요한 컬럼 삭제 (고객 ID)
     
     df['TotalCharges'] = pd.to_numeric(df['TotalCharges'], errors='coerce')
     # change datatype of 'TotalCharges' into nemeric from Object.
     # param, errors, coerce mean:
     # invalid parsing will be set as NaN.
     # ref: https://pandas.pydata.org/docs/reference/api/pandas.to_numeric.html
+    # 'TotalCharges' 데이터 타입을 Object -> Numeric으로 변경.
+    # errors='coerce' 로 설정한 경우, 만약 변경할 값이 '80.99'와 같은 숫자형이 아닌, '88.1asdf'와 같이 숫자 형태가 아닌 경우 -> NaN으로 변환
     
     # 평균 달 지출 feature 추가
+    # 'tenure'가 0인 경우 -> 1로 설정하여 에러 방지.
+    # 지금 생각하면 'tenure'가 0인 경우 -> df['AvgMonthlySpend'] = 0으로 설정? 
     df['AvgMonthlySpend'] = df['TotalCharges'] / df['tenure'].replace(0, 1)
-    df['AvgMonthlySpend']
     
+    # 숫자형 데이터 NaN값 처리. 여기선 각 컬럼의 median 값으로 설정.
+    # 다른 방식으로도 한번 해봐서 비교해보겠습니다..
     numericFeatures = df.select_dtypes(include=np.number).columns
     df[numericFeatures] = df[numericFeatures].fillna(value=df[numericFeatures].median())
     
-    df['SeniorCitizen'] = df['SeniorCitizen'].astype(bool)
     # change the datatype of 'SeniorCitizen, int64, to boolean
+    # 'SeniorCitizen' -> 0 OR 1, numeric -> boolean으로 변경. 
+    df['SeniorCitizen'] = df['SeniorCitizen'].astype()
     
     
     
@@ -51,8 +72,21 @@ def preprocessing(
         # -------------------------------------
         dealingOutlier(df, showTheOutlierForFeautres)
     
+    
     if convert_No_Service_to_No:
-        feature_with_phoneService = [
+        """
+            EX) 'phoneService' == No인 경우, 
+            'phoneService'와 관련된 컴럼들은 각 범주형 데이터를 가지지 않고 No Phone Service로 저장됨.
+            | PhoneService | MultipleLines    |
+            |--------------|------------------|
+            | No           | No phone service |
+            | Yes          | No               |
+            | Yes          | YES              |
+            
+            'No phone service' -> 'No' 로 치환할 것인가? 여부 
+        """
+        
+        features_with_phoneService = [
             'MultipleLines'
         ]
         
@@ -64,11 +98,11 @@ def preprocessing(
             "StreamingTV",
             "StreamingMovies"
         ]
-        for column in feature_with_phoneService:
-            df[column] = df[column].replace("No phone service","No")
+        for column in features_with_phoneService:
+            df[column] = df[column].replace("No phone service", "No")
         
         for column in features_with_internetService:
-            df[column] = df[column].replace("No internet service","No")
+            df[column] = df[column].replace("No internet service", "No")
     
     if run_normalize:
         # -------------------------------------
@@ -83,13 +117,14 @@ def preprocessing(
 
 
 def dealingOutlier(df, showTheOutlierForFeautres):  
-    
     numericFeatures = df.select_dtypes(include=np.number).columns.to_list()
     # list for feature names in which data is numeric
     
     if showTheOutlierForFeautres:
         """
             show mean, outlier, etc.. info for every numeric features.
+            숫자형 데이터 -> boxplot으로 표현.
+            그냥 과정 중에 확인 용도로 사용.. 
         """
         import matplotlib.pyplot as plt
         import seaborn as sns
@@ -119,29 +154,20 @@ def dealingOutlier(df, showTheOutlierForFeautres):
     
 
 def normalizeData(df):
+    """_summary_
+        숫자형 데이터 정규화 -> StandardScaler
+        -> 이것도 지금생각하니 다른 방법으로도 해보고 결과 비교해보겠습니다.. 
+    
+    """
     numericFeatures = df.select_dtypes(include=np.number).columns.to_list()
     
     from sklearn.preprocessing import StandardScaler
     df[numericFeatures] = StandardScaler().fit_transform(df[numericFeatures])
     
 
-def dealingCategoric(df, showTheCategoricValueForFeatures, target='Churn'):
-    df[target] = df[target].map({'Yes':1, 'No':0})
-    
-    categoricFeatures = df.select_dtypes(include='object').columns
-    
-    if showTheCategoricValueForFeatures:
-        for col in categoricFeatures:
-            print(f"[{col}]'s values:")
-            print(df[col].unique())
-            print("-"*40)
-    
-    categoricFeatures = categoricFeatures.to_list()
-    df = pd.get_dummies(df, columns=categoricFeatures, drop_first=True)
-    # change the values from categoric into numeric with one hot encoding method
-    
-    return df
-
+"""
+correlation 계산 
+-> 
 
 def computeCorrelation(df, target='Churn'):
     X = df.drop(target, axis=1)
@@ -174,33 +200,29 @@ def computeCorrelation(df, target='Churn'):
     #cmap='coolwarm'
     sns.heatmap(corrmat[[target]].sort_values(by=target, ascending=False), annot=True, cmap='RdYlGn', linewidths=0.5)
     
-    """
-    corrmat = df.corr(numeric_only=True)
-    top_corr_features = corrmat.index
-    sns.heatmap(df[top_corr_features].corr(), annot=True, cmap='RdYlGn')
-    """
     plt.tight_layout()
     plt.show()
+"""
 
 
 def categoricEncoding(df, method: Literal['one_hot','label'] = 'one_hot'):
     """_summary_
         change categoric to numeric with one hot encoding or label encoding
+        범주형 데이터 -> 숫자형 데이터로 변환
     Args:
-        df (pd.DataFrame): data
-        method (Literal[one_hot,label], optional): method. Defaults to 'one_hot'.
+        df (pd.DataFrame): 데이터셋
+        method (Literal[one_hot,label], optional): 데이터 변환 방식 'one hot' OR 'label'. Defaults to 'one_hot'.
 
     Returns:
-        pd.DataFrame: encoded DataFrame
+        pd.DataFrame: 변환 후 데이터셋
     """
     copiedDf = df.copy()
     if method == 'one_hot':
-        import pandas as pd
-        
         copiedDf['Churn'] = copiedDf['Churn'].map({'Yes':1, 'No':0})
         categoricFeatures = copiedDf.select_dtypes(include='object').columns
         categoricFeatures = categoricFeatures.to_list()
         copiedDf = pd.get_dummies(copiedDf, columns=categoricFeatures, drop_first=True)
+        
     elif method == 'label':
         from sklearn.preprocessing import LabelEncoder
         
