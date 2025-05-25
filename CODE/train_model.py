@@ -16,7 +16,8 @@ def train_decisionTree(df,
                         param_grid = {
                             'criterion': ['gini', 'entropy'],
                             'max_depth': [3, 5, 7, 10, None],
-                            'min_samples_leaf': [1, 3, 5, 7, 10]
+                            'min_samples_leaf': [1, 3, 5, 7, 10],
+                            'class_weight': [None, 'balanced']
                             },
                         target='Churn'
                         ):
@@ -64,7 +65,6 @@ def train_decisionTree(df,
 
 def elbow_method(
     df,
-    #KRange=range(2,6 + 1)
     maximum_n_Cluster = 6
     ):
     """_summary_

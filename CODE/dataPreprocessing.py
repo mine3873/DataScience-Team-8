@@ -4,10 +4,15 @@ from typing import Literal
 
 def preprocessing(
     df,
+    add_timeSeries = False,
     dealing_outlier = False,
     showTheOutlierForFeautres = False,
+    convert_YESNO_TO_01 = False,
     convert_No_Service_to_No = False,
     run_normalize = False,
+    selectBestFeatures = False,
+    numOfBestFeatures = 10,
+    showingCorr = False,
     method: Literal['one_hot','label','NONE'] = 'one_hot',
     ):
     """_summary_
@@ -38,6 +43,8 @@ def preprocessing(
         pd.DataFrame: 전처리된 데이터셋
     """
     
+    df['Churn'] = df['Churn'].map({'Yes': 1, 'No': 0})
+    
     df.drop(columns=['customerID'], inplace=True)
     # drop meaningless features.
     # 불필요한 컬럼 삭제 (고객 ID)
@@ -60,18 +67,25 @@ def preprocessing(
     numericFeatures = df.select_dtypes(include=np.number).columns
     df[numericFeatures] = df[numericFeatures].fillna(value=df[numericFeatures].median())
     
-    # change the datatype of 'SeniorCitizen, int64, to boolean
-    # 'SeniorCitizen' -> 0 OR 1, numeric -> boolean으로 변경. 
-    df['SeniorCitizen'] = df['SeniorCitizen'].astype()
-    
     
     
     if dealing_outlier:
         # -------------------------------------
         # Manage outlier data
         # -------------------------------------
-        dealingOutlier(df, showTheOutlierForFeautres)
+        
+        # numeric features 직접 명시
+        numericFeatures = ['MonthlyCharges', 'TotalCharges', 'tenure', 'AvgMonthlySpend']
+        dealingOutlier(df, numericFeatures, showTheOutlierForFeautres)
     
+    # 값이 [YES, NO]와 같이 2개 뿐인 범주형 데이터 -> [1,0]
+    # 더 많을 경우 encoding 적용
+    if convert_YESNO_TO_01:
+        df['gender'] = df['gender'].map({'Male': 1, 'Female': 0})
+        df['Partner'] = df['Partner'].map({'Yes': 1, 'No': 0})
+        df['Dependents'] = df['Dependents'].map({'Yes': 1, 'No': 0})
+        df['PhoneService'] = df['PhoneService'].map({'Yes': 1, 'No': 0})
+        
     
     if convert_No_Service_to_No:
         """
@@ -108,17 +122,25 @@ def preprocessing(
         # -------------------------------------
         # normalize data
         # -------------------------------------
-        normalizeData(df=df)
+        
+        # numeric features 직접 명시, 
+        # [1, 0] 인, 기존 Categoric도 정규화 처리된 오류 정정.
+        numericFeatures = ['MonthlyCharges', 'TotalCharges', 'tenure', 'AvgMonthlySpend']
+        normalizeData(df=df, numericFeatures=numericFeatures)
     
     if method != 'NONE':
         df = categoricEncoding(df=df, method=method)
     
+    if selectBestFeatures:
+        topFeatures = computeCorrelation(df=df, numOfFeatures=numOfBestFeatures, showingCorr = showingCorr)
+        df = df[topFeatures + ['Churn']]
+    
     return df
 
 
-def dealingOutlier(df, showTheOutlierForFeautres):  
-    numericFeatures = df.select_dtypes(include=np.number).columns.to_list()
-    # list for feature names in which data is numeric
+def dealingOutlier(df,
+                numericFeatures = ['MonthlyCharges', 'TotalCharges', 'tenure', 'AvgMonthlySpend'],
+                showTheOutlierForFeautres = False):  
     
     if showTheOutlierForFeautres:
         """
@@ -151,33 +173,31 @@ def dealingOutlier(df, showTheOutlierForFeautres):
         median = df[col].median()
         df.loc[df[col] < lowerBound, col] = median
         df.loc[df[col] > upperBound, col] = median
+        
+        
     
 
-def normalizeData(df):
+def normalizeData(df,
+                numericFeatures = ['MonthlyCharges', 'TotalCharges', 'tenure', 'AvgMonthlySpend']
+                ):
     """_summary_
         숫자형 데이터 정규화 -> StandardScaler
         -> 이것도 지금생각하니 다른 방법으로도 해보고 결과 비교해보겠습니다.. 
     
     """
-    numericFeatures = df.select_dtypes(include=np.number).columns.to_list()
-    
     from sklearn.preprocessing import StandardScaler
     df[numericFeatures] = StandardScaler().fit_transform(df[numericFeatures])
     
 
-"""
-correlation 계산 
--> 
-
-def computeCorrelation(df, target='Churn'):
+def computeCorrelation(df, target='Churn', numOfFeatures = 10, showingCorr = False):
     X = df.drop(target, axis=1)
     y = df[target]
     
     # --------------------------------
     # univariate selection
     # --------------------------------
-    from sklearn.feature_selection import SelectKBest
-    selectModel = SelectKBest(k='all')
+    from sklearn.feature_selection import SelectKBest, f_classif
+    selectModel = SelectKBest(score_func=f_classif, k='all')
     selectModel.fit(X,y)
     
     univariateScore = pd.DataFrame({
@@ -185,24 +205,30 @@ def computeCorrelation(df, target='Churn'):
         'F-Score': selectModel.scores_
     }).sort_values(by='F-Score', ascending=False)
     
-    print("\nUnivariate Selection: ")
-    print(univariateScore.head(10))
+    if showingCorr:
+        print("\nUnivariate Selection: ")
+        print(univariateScore.head(numOfFeatures))
     
-    # --------------------------------
-    # corr heatmap
-    # ---------------------------------
-    import matplotlib.pyplot as plt
-    import seaborn as sns
+        # --------------------------------
+        # corr heatmap
+        # ---------------------------------
+        import matplotlib.pyplot as plt
+        import seaborn as sns
+        
+        plt.figure(figsize=(12,12))
+        
+        corrmat = df.corr(numeric_only=True)
+        #cmap='coolwarm'
+        sns.heatmap(corrmat[[target]].sort_values(by=target, ascending=False),
+                    annot=True,
+                    cmap='RdYlGn',
+                    linewidths=0.5)
+        plt.title(f"corr with {target}")
+        plt.tight_layout()
+        plt.show()
+    return univariateScore['Feature'].head(numOfFeatures).tolist()
     
-    plt.figure(figsize=(12,12))
-    
-    corrmat = df.corr(numeric_only=True)
-    #cmap='coolwarm'
-    sns.heatmap(corrmat[[target]].sort_values(by=target, ascending=False), annot=True, cmap='RdYlGn', linewidths=0.5)
-    
-    plt.tight_layout()
-    plt.show()
-"""
+
 
 
 def categoricEncoding(df, method: Literal['one_hot','label'] = 'one_hot'):
@@ -218,7 +244,7 @@ def categoricEncoding(df, method: Literal['one_hot','label'] = 'one_hot'):
     """
     copiedDf = df.copy()
     if method == 'one_hot':
-        copiedDf['Churn'] = copiedDf['Churn'].map({'Yes':1, 'No':0})
+        #copiedDf['Churn'] = copiedDf['Churn'].map({'Yes':1, 'No':0})
         categoricFeatures = copiedDf.select_dtypes(include='object').columns
         categoricFeatures = categoricFeatures.to_list()
         copiedDf = pd.get_dummies(copiedDf, columns=categoricFeatures, drop_first=True)

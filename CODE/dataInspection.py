@@ -30,8 +30,7 @@ def printInfo(df):
     
     # 숫자형 데이터 통계적 정보 확인 
     print(f"Statistical Information: \n{df.describe()}")
-    
-    
+
     
 
 if __name__ == "__main__":

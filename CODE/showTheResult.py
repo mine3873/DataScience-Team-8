@@ -5,7 +5,41 @@ import seaborn as sns
 # ------------------------------------
 # Decision Tree
 # ------------------------------------
-from sklearn.metrics import classification_report, roc_auc_score, precision_score, recall_score, f1_score
+from sklearn.metrics import classification_report, roc_auc_score, precision_score, recall_score, f1_score, precision_recall_curve
+
+def find_bsetThreshold(bestModel, X_test, y_test):
+    """_summary_
+
+    Args:
+        bestModel (_type_): _description_
+        X_test (_type_): _description_
+        y_test (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    y_proba = bestModel.predict_proba(X_test)[:, 1]
+    precisions, recalls, thresholds = precision_recall_curve(y_test, y_proba)
+    
+    import numpy as np
+    f1s = [f1_score(y_test, y_proba >= t) for t in thresholds]
+    best_threshold = thresholds[np.argmax(f1s)]
+    
+    plt.figure(figsize=(12,8))
+    plt.plot(thresholds, precisions[:-1], label="Precision")
+    plt.plot(thresholds, recalls[:-1], label="Recall")
+    plt.plot(thresholds, f1s, label="F1 Score")
+    plt.axvline(x=best_threshold, color='r', label=f"best threshold = {best_threshold:.2f}")
+    plt.title("Threshold from precision, recall, f1")
+    plt.xlabel("threshold")
+    plt.ylabel("score")
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+    
+    print(f"\nbest threshold: {best_threshold}\n")
+    return best_threshold
+
 def returnThePerformance_decisionTree(bestModel, X_test, y_test, printResult = False, threshold = .5):
     """_summary_
         evaluate model.
@@ -19,13 +53,16 @@ def returnThePerformance_decisionTree(bestModel, X_test, y_test, printResult = F
     Returns:
         each scores from model.
     """
-    y_pred = bestModel.predict(X_test)
     y_proba = bestModel.predict_proba(X_test)[:, 1]
+    #y_pred = bestModel.predict(X_test)
+    y_pred = (y_proba >= threshold).astype(int)
     
     roc_auc = roc_auc_score(y_test, y_proba)
     precision = precision_score(y_test, y_pred)
     recall = recall_score(y_test, y_pred)
     f1 = f1_score(y_test, y_pred)
+    
+    
     
     if printResult:
         print("Classification Report:")
@@ -139,7 +176,7 @@ def caculate_ChurnRate_cluster(
     
     plt.figure(figsize=(12,8))
     sns.barplot(x=churnRate.index, y=churnRate.values, palette="Set2", hue=churnRate.index)
-    
+    plt.ylabel('churn rate')
     plt.tight_layout()
     plt.show()
     

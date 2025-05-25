@@ -12,8 +12,10 @@ from sklearn.model_selection import ParameterGrid
 def compare_performance_decisionTree_with_parameters(
     df,
     param_grid={
-        'convert_No_service_to_No': [True,False],
-        'encoding_method': ['one_hot','label']
+        'convert_No_service_to_No': [True, False],
+        'encoding_method': ['one_hot', 'label'],
+        'selectBestFeatures': [True,False],
+        'numOfBestFeatures':  [5,10,15,20,25],
         }
     ):
     
@@ -24,7 +26,9 @@ def compare_performance_decisionTree_with_parameters(
         df_param = preprocessing(
             df = df.copy(),
             convert_No_Service_to_No = param['convert_No_service_to_No'],
-            method = param['encoding_method']
+            method = param['encoding_method'],
+            selectBestFeatures=param['selectBestFeatures'],
+            numOfBestFeatures=param['numOfBestFeatures']
         )
         
         best_model_param, X_test, y_test = train_decisionTree(df=df_param)
@@ -41,33 +45,47 @@ def compare_performance_decisionTree_with_parameters(
             'f1': f1,
             'roc_auc': roc_auc
         })
-    results =  pd.DataFrame(results)
+        
+    results = pd.DataFrame(results)
     results['Setting'] = results.apply(
-        lambda row: f"{row['encoding_method']}, convert={row['convert_No_service_to_No']}",
+        lambda row: f"{row['encoding_method']}, conv={row['convert_No_service_to_No']}, topN={row['numOfBestFeatures']}" 
+        if row['selectBestFeatures'] else f"{row['encoding_method']}, conv={row['convert_No_service_to_No']}, all",
         axis=1
     )
 
     metrics = ['precision', 'recall', 'f1', 'roc_auc']
     titles = ['Precision', 'Recall', 'F1 Score', 'ROC-AUC']
 
-    fig, axes = plt.subplots(2, 2, figsize=(12, 8))
+    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
     axes = axes.flatten()
 
     for i, metric in enumerate(metrics):
+        ax = axes[i]
         sns.barplot(
             x='Setting',
             y=metric,
             data=results,
-            ax=axes[i],
-            palette='Set2',
+            ax=ax,
+            palette='Set3',
             hue='Setting'
         )
-        axes[i].set_title(titles[i])
-        axes[i].set_ylim(0, 1)
-        axes[i].set_xlabel('')
-        axes[i].tick_params(axis='x', rotation=30)
-        axes[i].grid(True, axis='y')
+        ax.set_title(titles[i], fontsize=14)
+        ax.set_ylim(0, 1)
+        ax.set_xlabel('')
+        ax.set_ylabel(metric.capitalize())
+        ax.tick_params(axis='x', rotation=30)
+        ax.grid(True, axis='y', linestyle='--', linewidth=0.5)
 
+        for p in ax.patches:
+            height = p.get_height()
+            ax.annotate(f'{height:.2f}', 
+                        (p.get_x() + p.get_width() / 2., height), 
+                        ha='center', va='bottom', fontsize=9)
+
+    plt.suptitle("Decision Tree Performance with each params", fontsize=20)
     plt.tight_layout()
     plt.show()
-
+    
+    print("\nBest params by F1:\n")
+    display_cols = ['Setting', 'precision', 'recall', 'f1', 'roc_auc']
+    print(results.sort_values(by='f1', ascending=False)[display_cols].head(5))
