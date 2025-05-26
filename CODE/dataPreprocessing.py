@@ -2,12 +2,12 @@ import pandas as pd
 import numpy as np
 from typing import Literal
 
+
+
 def preprocessing(
     df,
-    add_timeSeries = False,
     dealing_outlier = False,
     showTheOutlierForFeautres = False,
-    convert_YESNO_TO_01 = False,
     convert_No_Service_to_No = False,
     run_normalize = False,
     selectBestFeatures = False,
@@ -68,7 +68,6 @@ def preprocessing(
     df[numericFeatures] = df[numericFeatures].fillna(value=df[numericFeatures].median())
     
     
-    
     if dealing_outlier:
         # -------------------------------------
         # Manage outlier data
@@ -80,12 +79,10 @@ def preprocessing(
     
     # 값이 [YES, NO]와 같이 2개 뿐인 범주형 데이터 -> [1,0]
     # 더 많을 경우 encoding 적용
-    if convert_YESNO_TO_01:
-        df['gender'] = df['gender'].map({'Male': 1, 'Female': 0})
-        df['Partner'] = df['Partner'].map({'Yes': 1, 'No': 0})
-        df['Dependents'] = df['Dependents'].map({'Yes': 1, 'No': 0})
-        df['PhoneService'] = df['PhoneService'].map({'Yes': 1, 'No': 0})
-        
+    df['gender'] = df['gender'].map({'Male': 1, 'Female': 0})
+    df['Partner'] = df['Partner'].map({'Yes': 1, 'No': 0})
+    df['Dependents'] = df['Dependents'].map({'Yes': 1, 'No': 0})
+    df['PhoneService'] = df['PhoneService'].map({'Yes': 1, 'No': 0})
     
     if convert_No_Service_to_No:
         """
@@ -99,7 +96,6 @@ def preprocessing(
             
             'No phone service' -> 'No' 로 치환할 것인가? 여부 
         """
-        
         features_with_phoneService = [
             'MultipleLines'
         ]
@@ -137,7 +133,6 @@ def preprocessing(
     
     return df
 
-
 def dealingOutlier(df,
                 numericFeatures = ['MonthlyCharges', 'TotalCharges', 'tenure', 'AvgMonthlySpend'],
                 showTheOutlierForFeautres = False):  
@@ -173,9 +168,6 @@ def dealingOutlier(df,
         median = df[col].median()
         df.loc[df[col] < lowerBound, col] = median
         df.loc[df[col] > upperBound, col] = median
-        
-        
-    
 
 def normalizeData(df,
                 numericFeatures = ['MonthlyCharges', 'TotalCharges', 'tenure', 'AvgMonthlySpend']
@@ -187,7 +179,6 @@ def normalizeData(df,
     """
     from sklearn.preprocessing import StandardScaler
     df[numericFeatures] = StandardScaler().fit_transform(df[numericFeatures])
-    
 
 def computeCorrelation(df, target='Churn', numOfFeatures = 10, showingCorr = False):
     X = df.drop(target, axis=1)
@@ -227,9 +218,6 @@ def computeCorrelation(df, target='Churn', numOfFeatures = 10, showingCorr = Fal
         plt.tight_layout()
         plt.show()
     return univariateScore['Feature'].head(numOfFeatures).tolist()
-    
-
-
 
 def categoricEncoding(df, method: Literal['one_hot','label'] = 'one_hot'):
     """_summary_
@@ -255,8 +243,6 @@ def categoricEncoding(df, method: Literal['one_hot','label'] = 'one_hot'):
         for col in copiedDf.select_dtypes(include='object').columns:
             copiedDf[col] = LabelEncoder().fit_transform(copiedDf[col])
     return copiedDf
-
-
 
 if __name__ == "__main__":
     from load_dataSet import df

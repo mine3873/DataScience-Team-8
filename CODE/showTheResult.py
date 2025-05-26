@@ -7,7 +7,7 @@ import seaborn as sns
 # ------------------------------------
 from sklearn.metrics import classification_report, roc_auc_score, precision_score, recall_score, f1_score, precision_recall_curve
 
-def find_bsetThreshold(bestModel, X_test, y_test):
+def find_bsetThreshold(bestModel, X_test, y_test, showTheGraph = False):
     """_summary_
 
     Args:
@@ -25,19 +25,20 @@ def find_bsetThreshold(bestModel, X_test, y_test):
     f1s = [f1_score(y_test, y_proba >= t) for t in thresholds]
     best_threshold = thresholds[np.argmax(f1s)]
     
-    plt.figure(figsize=(12,8))
-    plt.plot(thresholds, precisions[:-1], label="Precision")
-    plt.plot(thresholds, recalls[:-1], label="Recall")
-    plt.plot(thresholds, f1s, label="F1 Score")
-    plt.axvline(x=best_threshold, color='r', label=f"best threshold = {best_threshold:.2f}")
-    plt.title("Threshold from precision, recall, f1")
-    plt.xlabel("threshold")
-    plt.ylabel("score")
-    plt.legend()
-    plt.tight_layout()
-    plt.show()
-    
-    print(f"\nbest threshold: {best_threshold}\n")
+    if showTheGraph:
+        plt.figure(figsize=(12,8))
+        plt.plot(thresholds, precisions[:-1], label="Precision")
+        plt.plot(thresholds, recalls[:-1], label="Recall")
+        plt.plot(thresholds, f1s, label="F1 Score")
+        plt.axvline(x=best_threshold, color='r', label=f"best threshold = {best_threshold:.2f}")
+        plt.title("Threshold from precision, recall, f1")
+        plt.xlabel("threshold")
+        plt.ylabel("score")
+        plt.legend()
+        plt.tight_layout()
+        plt.show()
+        print(f"\nbest threshold: {best_threshold}\n")
+        
     return best_threshold
 
 def returnThePerformance_decisionTree(bestModel, X_test, y_test, printResult = False, threshold = .5):
@@ -99,7 +100,6 @@ def returnThePerformance_decisionTree(bestModel, X_test, y_test, printResult = F
 from sklearn.tree import plot_tree
 def showTheDecisionTree(model,
                         feature_names,
-                        className=['No','Yes'],
                         max_depth=10,
                         fontsize=20):
     plt.figure(figsize=(20,10))

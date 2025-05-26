@@ -4,6 +4,7 @@
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import GridSearchCV
 from sklearn.tree import DecisionTreeClassifier
+from imblearn.over_sampling import SMOTE
 
 import matplotlib.pyplot as plt
 from sklearn.cluster import KMeans
@@ -13,6 +14,8 @@ import matplotlib.pyplot as plt
 # Decision Tree
 # ------------------------------------
 def train_decisionTree(df, 
+                        useSmoth = False,
+                        test_size = 0.2,
                         param_grid = {
                             'criterion': ['gini', 'entropy'],
                             'max_depth': [3, 5, 7, 10, None],
@@ -42,9 +45,14 @@ def train_decisionTree(df,
     X = df.drop(target, axis=1)
     y = df[target]
     
+    
+    
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, stratify=y, test_size=0.2, random_state=1
+        X, y, stratify=y, test_size=test_size, random_state=1
     )
+    
+    if useSmoth:
+        X_train, y_train = SMOTE().fit_resample(X_train, y_train)
     
     grid_search = GridSearchCV(
         estimator=DecisionTreeClassifier(random_state=1),
@@ -58,6 +66,36 @@ def train_decisionTree(df,
     bestModel = grid_search.best_estimator_
     
     return bestModel, X_test, y_test
+
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import classification_report
+
+def train_randomForest(df,
+                    param_grid = {
+                        'criterion': ['gini', 'entropy'],
+                        'max_depth': [3, 5, 7, 10, None],
+                        'min_samples_leaf': [1, 3, 5, 7, 10],
+                        'class_weight': [None, 'balanced']
+                        },
+                    target='Churn'
+                    ):
+    X = df.drop(target, axis=1)
+    y = df[target]
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, stratify=y, test_size=0.2, random_state=1
+    )
+    grid_search = GridSearchCV(
+        estimator=RandomForestClassifier(random_state=1),
+        param_grid=param_grid,
+        cv=5,
+        scoring='f1',
+        n_jobs=-1
+    )
+    grid_search.fit(X_train, y_train)
+    best_model = grid_search.best_estimator_
+    
+    return best_model, X_test, y_test
+
 
 # ------------------------------------
 # K-means clustering

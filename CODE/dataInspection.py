@@ -1,4 +1,5 @@
 import pandas as pd
+import matplotlib.pyplot as plt
 
 def printInfo(df):
     """_summary_
@@ -30,10 +31,18 @@ def printInfo(df):
     
     # 숫자형 데이터 통계적 정보 확인 
     print(f"Statistical Information: \n{df.describe()}")
+    
+    plt.figure(figsize=(12,8))
+    plt.bar(x=df['Churn'].unique(),height=df['Churn'].value_counts())
+    plt.ylabel('counts')
+    plt.title('the ratio of YES and NO')
+    plt.tight_layout()
+    plt.show()
+    
 
     
 
 if __name__ == "__main__":
-    from load_dataSet import df
-    printInfo(df=df)
+    from load_dataSet import load_dataSet
+    printInfo(df=load_dataSet())
 
