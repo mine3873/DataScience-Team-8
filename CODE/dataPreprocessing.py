@@ -42,6 +42,7 @@ def preprocessing(
     Returns:
         pd.DataFrame: 전처리된 데이터셋
     """
+    df = df.copy()
     
     df['Churn'] = df['Churn'].map({'Yes': 1, 'No': 0})
     

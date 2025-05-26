@@ -8,7 +8,7 @@ process.print_statistical()
 process.preprocessing(
     dealing_outlier=True,
     convert_No_Service_to_No=False,
-    run_normalize=True,
+    run_normalize=False,
     selectBestFeatures=True,
     numOfBestFeatures = 10,
     method='label'
@@ -29,3 +29,6 @@ process.showTree(
     fontsize=10
 )
 
+process.find_best_parameter_decisionTree(
+    showTheGraph=False
+)

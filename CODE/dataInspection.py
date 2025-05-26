@@ -27,7 +27,7 @@ def printInfo(df):
     """
     # 위와 같은 이유로 각 컬럼의 NaN 의 수는 0으로 출력. -> 문자열 'NaN'으로 인식되기 때문.
     # 
-    print(f"Num Of NaN in each feature: \n{df.isna().sum()}")
+    print(f"\nNum Of NaN in each feature: \n{df.isna().sum()}")
     
     # 숫자형 데이터 통계적 정보 확인 
     print(f"Statistical Information: \n{df.describe()}")

@@ -45,7 +45,8 @@ def train_decisionTree(df,
     X = df.drop(target, axis=1)
     y = df[target]
     
-    
+    if useSmoth:
+        param_grid['class_weight'] = [None]
     
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, stratify=y, test_size=test_size, random_state=1
