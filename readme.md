@@ -1,5 +1,52 @@
-# INTRODUCTION
-## CODE/.py 소개(기능, 목적)
+# Data Science
+``` python
+# import DataScience Class for running each step of end-to-end BIG DATA process
+from DataScience import DataScience
+```
+
+``` python
+process = DataScience()
+```
+
+``` python
+# load data
+process.load_dataSet()
+```
+  
+``` python
+# print statistical info in data
+process.print_statistical()
+```
+
+``` python
+# run the step of preprocessing
+process.preprocessing(
+    dealing_outlier=True,
+    run_normalize=False,
+    selectBestFeatures=True,
+    numOfBestFeatures = 10,
+    method='one_hot'
+)
+```
+
+``` python
+# run the step of training model.
+process.trainModel(
+    model='decisionTree',
+    useSmoth=False,
+    test_size=0.2
+)
+```
+  
+``` python
+# evaluate the trained model
+process.evaluate(
+    printResult=True,
+    tuneThreshold=True
+)
+```
+  
+## CODE/.py
 - `downloadDataSet.py`
 kaggle 로부터 데이터 다운 
 
@@ -20,10 +67,11 @@ random Forest, Gradient Boosting 등은 `.ipynb` 에만 선언해서 따로 추�
 - `showTheResult.py`
 학습한 모델 평가 및 결과 시각화 함수 저장된 파일.
 
-- `DataScienceTermP.py`
-위 6개의 `.py` 파일 속에서 선언된 함수들을 불러와 텀프로젝트 과정 전반을 수행.
-
 - `AUTOMATIC.py`
 `DataScienceTermP.py`와 마찬가지로 데이터 로드, 전처리, 학습 각 과정을 자동으로 처리해주는 함수 저장.
 그러나 함수 호출 시,  사용할 파라미터를 설정하여 (ex, 범주형 데이터 처리 방식: one hot OR label?) 
 각 과정의 성능 비교 API. 
+
+- `DataScience.py`
+end-to-end Big Data의 각 단계 별 함수 선언한 클래스 파일
+
