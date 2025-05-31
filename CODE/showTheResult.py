@@ -9,14 +9,14 @@ from sklearn.metrics import classification_report, roc_auc_score, precision_scor
 
 def find_bsetThreshold(bestModel, X_test, y_test, showTheGraph = False):
     """_summary_
-
+        find best Threshold for 
     Args:
-        bestModel (_type_): _description_
-        X_test (_type_): _description_
-        y_test (_type_): _description_
+        bestModel: trained decision tree classifier model.
+        X_test: features for test
+        y_test: targets for test
 
     Returns:
-        _type_: _description_
+        float: the threshold value with best f1 score.
     """
     y_proba = bestModel.predict_proba(X_test)[:, 1]
     precisions, recalls, thresholds = precision_recall_curve(y_test, y_proba)
@@ -150,6 +150,11 @@ def plot_clusterBoxplots(df, clusterFeature='Cluster', features=None):
     plt.show()
     
 def numOfClient_clusters(df, clusterFeature='Cluster'):
+    """_summary_
+        show the distribution of clusters,
+    Args:
+        df(pd.DataFrame): data, but added cluster to each rows
+    """
     sns.countplot(x=clusterFeature, data=df)
     plt.title("num of clients in each cluster")
     plt.tight_layout()
@@ -157,6 +162,11 @@ def numOfClient_clusters(df, clusterFeature='Cluster'):
 
 
 def show_cluster_with_pca(df, clusterFeature='Cluster'):
+    """_summary_
+        print the data onto dim(2) graph.
+    Args:
+        df(pd.DataFrame): data, but added cluster to each rows
+    """
     X = df.copy().drop(columns=[clusterFeature])
     X_pca = PCA(n_components=2).fit_transform(X)
     
@@ -172,6 +182,11 @@ def caculate_ChurnRate_cluster(
         clusterFeature='Cluster',
         churnFeature='Churn'
     ):
+    """_summary_
+        calculate the churn rate with each cluster.
+    Args:
+        df(pd.DataFrame): data, but added cluster to each rows
+    """
     churnRate = df.groupby(clusterFeature)[churnFeature].mean()
     
     plt.figure(figsize=(12,8))
@@ -185,6 +200,11 @@ def caculate_ChurnRate_cluster(
         print(f"cluster-{cluster}: {rate:.3f}%")
         
 def evaluate_clustering(df, cluster_col='Cluster'):
+    """_summary_
+        evaluate the Silhouette Score from the clustered data.
+    Args:
+        df(pd.DataFrame): data, but added cluster to each rows   
+    """
     X = df.drop(columns=[cluster_col])
     labels = df[cluster_col]
 
